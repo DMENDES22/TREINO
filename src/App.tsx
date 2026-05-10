@@ -11,8 +11,9 @@ import WorkoutHistory from './pages/WorkoutHistory';
 import ProfileSettings from './pages/ProfileSettings';
 import AuthPage from './pages/AuthPage';
 import ActiveWorkout from './pages/ActiveWorkout';
+import Nutrition from './pages/Nutrition';
 
-type Tab = 'home' | 'exercises' | 'workouts' | 'history' | 'profile';
+type Tab = 'home' | 'exercises' | 'workouts' | 'history' | 'profile' | 'nutrition';
 
 const MainApp = () => {
   const { user, profile, loading } = useAuth();
@@ -46,7 +47,8 @@ const MainApp = () => {
 
   const menuItems = [
     { id: 'home', icon: <Home size={20} />, label: 'Início' },
-    { id: 'exercises', icon: <Search size={20} />, label: 'Biblioteca' },
+    { id: 'nutrition', icon: <Search size={20} />, label: 'Nutrição' },
+    { id: 'exercises', icon: <PlusCircle size={20} />, label: 'Biblioteca' },
     { id: 'workouts', icon: <Dumbbell size={20} />, label: 'Meus Treinos' },
     { id: 'history', icon: <History size={20} />, label: 'Histórico' },
     { id: 'profile', icon: <User size={20} />, label: 'Perfil' },
@@ -113,6 +115,7 @@ const MainApp = () => {
           <div>
             <h1 className="text-xl font-black text-white italic tracking-tighter">
               {activeTab === 'home' && 'DASHBOARD'}
+              {activeTab === 'nutrition' && 'NUTRIÇÃO'}
               {activeTab === 'exercises' && 'BIBLIOTECA'}
               {activeTab === 'workouts' && 'MEUS TREINOS'}
               {activeTab === 'history' && 'HISTÓRICO'}
@@ -141,6 +144,7 @@ const MainApp = () => {
             className="h-full"
           >
             {activeTab === 'home' && <Dashboard onStartWorkout={() => setIsTraining(true)} />}
+            {activeTab === 'nutrition' && <Nutrition />}
             {activeTab === 'exercises' && <ExerciseLibrary />}
             {activeTab === 'workouts' && <WorkoutPlans />}
             {activeTab === 'history' && <WorkoutHistory />}
