@@ -1,0 +1,64 @@
+{
+  "entities": {
+    "User": {
+      "title": "Perfil de Usuário",
+      "description": "Dados de perfil e configurações do usuário",
+      "type": "object",
+      "properties": {
+        "weight": { "type": "number", "description": "Peso em kg" },
+        "height": { "type": "number", "description": "Altura em cm" },
+        "age": { "type": "number", "description": "Idade" },
+        "gender": { "type": "string", "enum": ["Masculino", "Feminino", "Outro"] },
+        "goal": { "type": "string", "enum": ["Hipertrofia", "Emagrecimento", "Força", "Resistência"] },
+        "level": { "type": "string", "enum": ["Iniciante", "Intermediário", "Avançado"] },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" }
+      },
+      "required": ["weight", "height", "age", "goal", "level"]
+    },
+    "Exercise": {
+      "title": "Exercício",
+      "description": "Detalhes de um exercício da biblioteca",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "category": { "type": "string", "description": "Grupo muscular" },
+        "description": { "type": "string" },
+        "instructions": { "type": "string" },
+        "muscles": { "type": "array" },
+        "equipment": { "type": "string" },
+        "gifUrl": { "type": "string" }
+      }
+    },
+    "Workout": {
+      "title": "Plano de Treino",
+      "description": "Um conjunto de exercícios planejado pelo usuário",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "exercises": { "type": "array", "description": "Lista de exercícios com sets/reps planejados" }
+      }
+    },
+    "Session": {
+       "title": "Sessão de Treino",
+       "description": "Um registro de treino realizado",
+       "type": "object",
+       "properties": {
+         "userId": { "type": "string" },
+         "workoutId": { "type": "string" },
+         "title": { "type": "string" },
+         "date": { "type": "string", "format": "date-time" },
+         "exercises": { "type": "array", "description": "Lista de exercícios com carga e repetições reais" },
+         "duration": { "type": "number", "description": "Duração em minutos" }
+       }
+    }
+  },
+  "firestore": {
+    "users/{userId}": { "schema": "User", "description": "Perfis de usuários" },
+    "exercises": { "schema": "Exercise", "description": "Lista mestre de exercícios" },
+    "users/{userId}/workouts": { "schema": "Workout", "description": "Treinos personalizados dos usuários" },
+    "users/{userId}/sessions": { "schema": "Session", "description": "Histórico de sessões dos usuários" }
+  }
+}
