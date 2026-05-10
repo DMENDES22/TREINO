@@ -29,31 +29,6 @@ export interface Set {
   rpe?: number;
 }
 
-export type NutritionalGoal = 'Manutenção' | 'Cutting' | 'Bulking Limpo';
-export type DietStrategy = 'Dieta Constante' | 'Ciclo de Carboidratos';
-export type MealCategory = 'Café da Manhã' | 'Almoço' | 'Lanche' | 'Janta' | 'Ceia';
-export type ActivityLevel = 1.2 | 1.375 | 1.55 | 1.725 | 1.9;
-
-export interface DailyMacros {
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-}
-
-export interface Meal {
-  id: string;
-  userId: string;
-  date: number;
-  name: string;
-  category: MealCategory;
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  weight?: number;
-}
-
 export interface WorkoutExercise extends Exercise {
   sets: Set[];
   restTime: number; // in seconds
@@ -85,18 +60,11 @@ export interface UserProfile {
   weight: number;
   height: number;
   age: number;
-  gender: 'Masculino' | 'Feminino' | string;
+  gender: string;
   goal: 'Hipertrofia' | 'Emagrecimento' | 'Força' | 'Resistência';
   level: 'Iniciante' | 'Intermediário' | 'Avançado';
   displayName: string;
   email: string;
-  // Nutrition fields
-  targetWeight?: number;
-  activityLevel?: ActivityLevel;
-  nutritionalGoal?: NutritionalGoal;
-  dietStrategy?: DietStrategy;
-  baseMacros?: DailyMacros;
-  carbCycleConfig?: Record<string, 'Low' | 'Medium' | 'High'>;
   // New Measurements
   arm?: number;
   waist?: number;
