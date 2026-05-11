@@ -60,11 +60,12 @@ export interface UserProfile {
   weight: number;
   height: number;
   age: number;
-  gender: string;
-  goal: 'Hipertrofia' | 'Emagrecimento' | 'Força' | 'Resistência';
+  goal: 'Emagrecer' | 'Ganhar massa' | 'Manter peso' | 'Hipertrofia' | 'Força' | 'Resistência';
   level: 'Iniciante' | 'Intermediário' | 'Avançado';
   displayName: string;
+  name?: string;
   email: string;
+  gender: string; // Masculino | Feminino
   // New Measurements
   arm?: number;
   waist?: number;
@@ -72,7 +73,9 @@ export interface UserProfile {
   leg?: number;
   hip?: number;
   neck?: number;
+  biceps?: number;
   fatPercentage?: number;
+  leanMass?: number;
   measurementsHistory?: {
     date: number;
     weight: number;

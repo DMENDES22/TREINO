@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Home, Dumbbell, TrendingUp, Library, User, PlusCircle, Search, Play, Menu, X, ChevronRight, History } from 'lucide-react';
 import { AuthProvider, useAuth } from './hooks/useAuth';
-import { Home, Dumbbell, History, User, PlusCircle, Search } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 
 // Pages
 import Dashboard from './pages/Dashboard';
@@ -11,158 +11,194 @@ import WorkoutHistory from './pages/WorkoutHistory';
 import ProfileSettings from './pages/ProfileSettings';
 import AuthPage from './pages/AuthPage';
 import ActiveWorkout from './pages/ActiveWorkout';
+import CustomExerciseCreator from './components/CustomExerciseCreator';
 
-type Tab = 'home' | 'exercises' | 'workouts' | 'history' | 'profile';
+import { Workout } from './types';
 
-const MainApp = () => {
-  const { user, profile, loading } = useAuth();
-  const [activeTab, setActiveTab] = useState<Tab>('home');
-  const [isTraining, setIsTraining] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  if (loading) {
-    return (
-      <div className="h-screen w-screen flex items-center justify-center bg-black">
-        <motion.div 
-          animate={{ scale: [1, 1.2, 1], rotate: [0, 180, 360] }}
-          transition={{ duration: 2, repeat: Infinity }}
-          className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full"
-        />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <AuthPage />;
-  }
-
-  if (user && !profile) {
-    return <ProfileSettings isInitialSetup={true} />;
-  }
-
-  if (isTraining) {
-    return <ActiveWorkout onFinish={() => setIsTraining(false)} />;
-  }
-
-  const menuItems = [
-    { id: 'home', icon: <Home size={20} />, label: 'Início' },
-    { id: 'exercises', icon: <Search size={20} />, label: 'Biblioteca' },
-    { id: 'workouts', icon: <Dumbbell size={20} />, label: 'Meus Treinos' },
-    { id: 'history', icon: <History size={20} />, label: 'Histórico' },
-    { id: 'profile', icon: <User size={20} />, label: 'Perfil' },
-  ];
-
-  return (
-    <div className="flex flex-col h-screen bg-black text-white max-w-md mx-auto relative overflow-hidden">
-      {/* Drawer Menu */}
-      <AnimatePresence>
-        {isMenuOpen && (
-          <>
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsMenuOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
-            />
-            <motion.div 
-              initial={{ x: -300 }}
-              animate={{ x: 0 }}
-              exit={{ x: -300 }}
-              className="fixed top-0 left-0 bottom-0 w-64 bg-neutral-950 border-r border-neutral-800 z-50 p-6 flex flex-col"
-            >
-              <div className="mb-12">
-                <h1 className="text-2xl font-black text-red-600 italic tracking-tighter">IRONFLOW</h1>
-              </div>
-
-              <div className="space-y-2 flex-1">
-                {menuItems.map(item => (
-                  <button 
-                    key={item.id}
-                    onClick={() => {
-                      setActiveTab(item.id as Tab);
-                      setIsMenuOpen(false);
-                    }}
-                    className={`w-full flex items-center gap-4 p-4 rounded-xl font-bold transition-all ${activeTab === item.id ? 'bg-red-600 text-white' : 'text-neutral-500 hover:bg-neutral-900'}`}
-                  >
-                    {item.icon}
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-
-              <div className="pt-6 border-t border-neutral-800">
-                 <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest text-center">v1.0.0 Beta</p>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-
-      {/* Header */}
-      <header className="p-6 flex justify-between items-center bg-black/80 backdrop-blur-md sticky top-0 z-30">
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={() => setIsMenuOpen(true)}
-            className="p-2 hover:bg-neutral-900 rounded-lg transition-colors"
-          >
-            <div className="w-6 h-0.5 bg-white mb-1.5 rounded-full" />
-            <div className="w-4 h-0.5 bg-white mb-1.5 rounded-full" />
-            <div className="w-6 h-0.5 bg-white rounded-full" />
-          </button>
-          <div>
-            <h1 className="text-xl font-black text-white italic tracking-tighter">
-              {activeTab === 'home' && 'DASHBOARD'}
-              {activeTab === 'exercises' && 'BIBLIOTECA'}
-              {activeTab === 'workouts' && 'MEUS TREINOS'}
-              {activeTab === 'history' && 'HISTÓRICO'}
-              {activeTab === 'profile' && 'PERFIL'}
-            </h1>
-          </div>
-        </div>
-        
-        <button 
-          onClick={() => setIsTraining(true)}
-          className="bg-red-600 p-2 rounded-full shadow-lg shadow-red-600/20 active:scale-95 transition-transform"
-        >
-          <PlusCircle size={24} />
-        </button>
-      </header>
-
-      {/* Content */}
-      <main className="flex-1 overflow-y-auto px-4 pb-4">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.1 }}
-            className="h-full"
-          >
-            {activeTab === 'home' && <Dashboard onStartWorkout={() => setIsTraining(true)} />}
-            {activeTab === 'exercises' && <ExerciseLibrary />}
-            {activeTab === 'workouts' && <WorkoutPlans />}
-            {activeTab === 'history' && <WorkoutHistory />}
-            {activeTab === 'profile' && <ProfileSettings />}
-          </motion.div>
-        </AnimatePresence>
-      </main>
-    </div>
-  );
-};
+type Tab = 'home' | 'workouts' | 'exercises' | 'evolution' | 'profile';
 
 const NavButton = ({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string }) => (
   <button 
     onClick={onClick}
-    className={`flex flex-col items-center justify-center transition-all duration-300 ${active ? 'text-red-500 scale-110' : 'text-neutral-500'}`}
+    className={`flex flex-col items-center justify-center transition-all duration-300 flex-1 ${active ? 'text-red-500 scale-110' : 'text-neutral-500'}`}
   >
-    <div className={`p-1 rounded-lg ${active ? 'bg-red-500/10' : ''}`}>
+    <div className={`p-1.5 rounded-xl transition-all ${active ? 'bg-red-600/10' : ''}`}>
       {icon}
     </div>
-    <span className="text-[10px] font-bold mt-1 uppercase tracking-tighter">{label}</span>
+    <span className={`text-[8px] font-black mt-1 uppercase tracking-widest ${active ? 'opacity-100' : 'opacity-40'}`}>{label}</span>
   </button>
 );
+
+const MainApp = () => {
+  const { user, profile, loading } = useAuth();
+  const [activeTab, setActiveTab] = useState<Tab>('home');
+  const [isTraining, setIsTraining] = useState<Workout | null>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  if (loading) {
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-black">
+        <motion.div 
+          animate={{ scale: [1, 1.2, 1], rotate: [0, 180, 360] }}
+          transition={{ duration: 2, repeat: Infinity }}
+          className="w-20 h-20 bg-red-600 rounded-[40px] mb-8 shadow-2xl shadow-red-600/30 flex items-center justify-center"
+        >
+          <Dumbbell className="text-white" size={40} />
+        </motion.div>
+        <h1 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none">IRONFLOW</h1>
+        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-600 mt-2">Forge Your Power</p>
+      </div>
+    );
+  }
+
+  if (!user) return <AuthPage />;
+  if (!profile) return <ProfileSettings isInitialSetup={true} />;
+  if (isTraining) return <ActiveWorkout plan={isTraining} onFinish={() => setIsTraining(null)} />;
+
+  const menuItems = [
+    { id: 'home', label: 'Home', icon: <Home size={22} /> },
+    { id: 'workouts', label: 'Meus Treinos', icon: <Play size={22} /> },
+    { id: 'exercises', label: 'Biblioteca', icon: <Library size={22} /> },
+    { id: 'evolution', label: 'Evolução', icon: <TrendingUp size={22} /> },
+    { id: 'profile', label: 'Perfil', icon: <User size={22} /> },
+  ];
+
+  const handleTabChange = (id: string) => {
+    setActiveTab(id as Tab);
+    setIsMenuOpen(false);
+  };
+
+  return (
+    <div className="flex flex-col h-screen bg-black text-white max-w-md mx-auto relative overflow-hidden font-sans">
+      {/* Mobile Safe Area Guard */}
+      <div className="h-safe-top" />
+
+      {/* Sidebar Overlay */}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsMenuOpen(false)}
+            className="fixed inset-0 bg-black/90 backdrop-blur-xl z-[60]"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Sidebar Menu */}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <motion.aside
+            initial={{ x: '-100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '-100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="fixed top-0 left-0 bottom-0 w-[80%] max-w-[300px] bg-neutral-950 border-r border-neutral-800 z-[70] p-8 flex flex-col"
+          >
+            <div className="flex justify-between items-center mb-12">
+               <div>
+                  <h2 className="text-2xl font-black text-red-600 italic tracking-tighter leading-none mb-1">IRONFLOW</h2>
+                  <p className="text-[8px] font-black uppercase tracking-[0.2em] text-neutral-600 text-left">IRON MENU</p>
+               </div>
+               <button onClick={() => setIsMenuOpen(false)} className="w-10 h-10 bg-neutral-900 border border-neutral-800 rounded-2xl flex items-center justify-center text-neutral-400">
+                  <X size={20} />
+               </button>
+            </div>
+
+            <nav className="space-y-2 flex-1">
+               {menuItems.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => handleTabChange(item.id)}
+                    className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all ${activeTab === item.id ? 'bg-red-600 text-white font-black italic shadow-lg shadow-red-600/20' : 'text-neutral-500 hover:text-white font-bold'}`}
+                  >
+                    <div className="flex items-center gap-4">
+                       {item.icon}
+                       <span className="text-sm uppercase tracking-widest">{item.label}</span>
+                    </div>
+                    {activeTab === item.id && <ChevronRight size={16} />}
+                  </button>
+               ))}
+            </nav>
+
+            <div className="pt-8 border-t border-neutral-900">
+               <p className="text-[10px] font-black text-neutral-700 uppercase tracking-widest mb-2">Power Status</p>
+               <div className="bg-neutral-900 rounded-2xl p-4 flex items-center gap-3">
+                  <div className="w-10 h-10 bg-red-600/10 rounded-xl flex items-center justify-center text-red-600">
+                     <TrendingUp size={20} />
+                  </div>
+                  <div>
+                     <p className="text-xs font-black uppercase italic leading-none mb-1">Nível Elite</p>
+                     <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Master 4 dias/freq</p>
+                  </div>
+               </div>
+            </div>
+          </motion.aside>
+        )}
+      </AnimatePresence>
+
+      {/* Header */}
+      <header className="px-6 pt-10 pb-4 flex justify-between items-center bg-black/40 backdrop-blur-md sticky top-0 z-40">
+        <button 
+           onClick={() => setIsMenuOpen(true)}
+           className="bg-neutral-900 border border-neutral-800 w-12 h-12 rounded-2xl flex items-center justify-center active:scale-95 transition-all text-white"
+        >
+          <Menu size={24} />
+        </button>
+
+        <div className="text-center">
+          <h1 className="text-3xl font-black text-red-600 italic tracking-tighter leading-none">IRONFLOW</h1>
+          <p className="text-[9px] font-black uppercase tracking-[0.4em] text-neutral-600 text-center ml-1">STRENGTH FIRST</p>
+        </div>
+        
+        <button 
+          onClick={() => setActiveTab('profile')}
+          className="bg-neutral-900 border border-neutral-800 w-12 h-12 rounded-2xl flex items-center justify-center active:scale-95 transition-transform overflow-hidden"
+        >
+          <User size={24} className="text-neutral-400" />
+        </button>
+      </header>
+
+      {/* Content */}
+      <main className="flex-1 overflow-y-auto px-6 pb-40">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -10 }}
+            transition={{ duration: 0.2 }}
+            className="h-full pt-4"
+          >
+            {activeTab === 'home' && <Dashboard onStartWorkout={() => setActiveTab('workouts')} onStartHistory={() => setActiveTab('evolution')} />}
+            {activeTab === 'workouts' && <WorkoutPlans onStartWorkout={(plan) => setIsTraining(plan)} />}
+            {activeTab === 'exercises' && <ExerciseLibrary />}
+            {activeTab === 'evolution' && <WorkoutHistory />}
+            {activeTab === 'profile' && <ProfileSettings />}
+          </motion.div>
+        </AnimatePresence>
+      </main>
+
+      {/* Central Floating Action Button */}
+      <div className="fixed bottom-10 left-0 right-0 z-[50] flex justify-center pointer-events-none">
+         <motion.button 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setActiveTab('workouts')}
+            className="pointer-events-auto bg-red-600 text-white px-10 py-5 rounded-[32px] flex items-center gap-4 shadow-[0_20px_50px_rgba(220,38,38,0.4)] relative group overflow-hidden"
+         >
+            <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-20 transition-opacity" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+            <Dumbbell size={24} className="group-hover:rotate-12 transition-transform" />
+            <span className="text-sm font-black uppercase italic tracking-widest">Iniciar Treino</span>
+         </motion.button>
+      </div>
+
+      <div className="h-safe-bottom" />
+    </div>
+  );
+};
 
 export default function App() {
   return (

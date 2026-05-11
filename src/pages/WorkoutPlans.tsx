@@ -1,43 +1,67 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Dumbbell, Clock, ChevronRight, Layers, X, Save } from 'lucide-react';
-import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
+import { motion, AnimatePresence } from 'motion/react';
+import { Plus, Dumbbell, Clock, ChevronRight, Layers, X, Save, Trash2, Edit2, Type } from 'lucide-react';
+import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { useAuth } from '../hooks/useAuth';
 import { Workout } from '../types';
+import WorkoutPlanEditor from '../components/WorkoutPlanEditor';
 
-export default function WorkoutPlans() {
+interface Props {
+  onStartWorkout: (plan: Workout) => void;
+}
+
+export default function WorkoutPlans({ onStartWorkout }: Props) {
   const { user } = useAuth();
   const [plans, setPlans] = useState<Workout[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<Workout | null>(null);
+  const [detailedEditingPlan, setDetailedEditingPlan] = useState<Workout | null>(null);
   const [newPlanTitle, setNewPlanTitle] = useState('');
   const [newPlanDescription, setNewPlanDescription] = useState('Novo plano de treino');
 
-  useEffect(() => {
-    const fetchPlans = async () => {
-      if (!user) return;
-      try {
-        const q = query(collection(db, 'workouts'), where('userId', '==', user.uid));
-        const querySnapshot = await getDocs(q);
-        const fetchedPlans: Workout[] = [];
-        querySnapshot.forEach((doc) => {
-          fetchedPlans.push({ id: doc.id, ...doc.data() } as Workout);
-        });
-        setPlans(fetchedPlans);
-      } catch (error) {
-        handleFirestoreError(error, OperationType.LIST, 'workouts');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchPlans = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const q = query(collection(db, 'workouts'), where('userId', '==', user.uid));
+      const querySnapshot = await getDocs(q);
+      const fetchedPlans: Workout[] = [];
+      querySnapshot.forEach((doc) => {
+        fetchedPlans.push({ id: doc.id, ...doc.data() } as Workout);
+      });
+      setPlans(fetchedPlans);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.LIST, 'workouts');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchPlans();
   }, [user]);
 
   const addPlan = async () => {
     if (!newPlanTitle.trim() || !user) return;
     
+    if (editingPlan) {
+      try {
+        await updateDoc(doc(db, 'workouts', editingPlan.id), {
+          title: newPlanTitle,
+          description: newPlanDescription
+        });
+        setPlans(plans.map(p => p.id === editingPlan.id ? { ...p, title: newPlanTitle, description: newPlanDescription } : p));
+        setEditingPlan(null);
+        setIsCreating(false);
+        setNewPlanTitle('');
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, 'workouts');
+      }
+      return;
+    }
+
     const newPlanData = {
       userId: user.uid,
       title: newPlanTitle,
@@ -56,8 +80,27 @@ export default function WorkoutPlans() {
     }
   };
 
+  const deletePlan = async (id: string, title: string) => {
+    if (!window.confirm(`Deseja realmente excluir o treino "${title}"?`)) return;
+
+    try {
+      await deleteDoc(doc(db, 'workouts', id));
+      setPlans(prev => prev.filter(p => p.id !== id));
+      alert('Treino removido com sucesso.');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, 'workouts');
+    }
+  };
+
+  const handleEdit = (plan: Workout) => {
+    setEditingPlan(plan);
+    setNewPlanTitle(plan.title);
+    setNewPlanDescription(plan.description || '');
+    setIsCreating(true);
+  };
+
   return (
-    <div className="space-y-6 pt-2 pb-20">
+    <div className="space-y-6 pt-2 pb-10">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-2">
            <Layers className="text-red-500" size={20} />
@@ -85,15 +128,39 @@ export default function WorkoutPlans() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.1 }}
                 key={plan.id}
-                className="group bg-neutral-900 border border-neutral-800 rounded-3xl p-5 hover:border-red-600/40 transition-all cursor-pointer relative overflow-hidden"
+                onClick={() => onStartWorkout(plan)}
+                className="group bg-neutral-900 border border-neutral-800 rounded-3xl p-5 hover:border-red-600/40 transition-all cursor-pointer relative overflow-hidden active:scale-[0.98]"
               >
-                 <div className="absolute -right-4 -top-4 w-24 h-24 bg-red-600/5 blur-3xl group-hover:bg-red-600/10 transition-colors" />
-                 
-                 <div className="flex items-center gap-2 mb-4">
+                  <div className="absolute -right-4 -top-4 w-24 h-24 bg-red-600/5 blur-3xl group-hover:bg-red-600/10 transition-colors" />
+                  
+                  <div className="flex items-center justify-between mb-4">
                     <span className="bg-red-600/20 text-red-500 text-[10px] font-black px-2 py-1 rounded-md tracking-widest uppercase">Personalizado</span>
-                 </div>
+                    <div className="flex gap-2 relative z-10">
+                      <button 
+                         onClick={(e) => { e.stopPropagation(); setDetailedEditingPlan(plan); }}
+                         className="p-1.5 bg-neutral-800 rounded-lg text-neutral-400 hover:text-white transition-colors"
+                         title="Editar Exercícios"
+                      >
+                         <Edit2 size={14} />
+                      </button>
+                      <button 
+                         onClick={(e) => { e.stopPropagation(); handleEdit(plan); }}
+                         className="p-1.5 bg-neutral-800 rounded-lg text-neutral-400 hover:text-white transition-colors"
+                         title="Editar Título"
+                      >
+                         <Type size={14} />
+                      </button>
+                      <button 
+                         onClick={(e) => { e.stopPropagation(); deletePlan(plan.id, plan.title); }}
+                         className="p-1.5 bg-neutral-800 rounded-lg text-neutral-400 hover:text-red-500 transition-colors"
+                         title="Excluir"
+                      >
+                         <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
 
-                 <h3 className="text-xl font-black italic uppercase tracking-tighter mb-4 text-white group-hover:text-red-500 transition-colors">{plan.title}</h3>
+                  <h3 className="text-xl font-black italic uppercase tracking-tighter mb-4 text-white group-hover:text-red-500 transition-colors">{plan.title}</h3>
                  
                  <div className="flex items-center justify-between">
                     <div className="flex gap-4">
@@ -103,7 +170,7 @@ export default function WorkoutPlans() {
                        </div>
                        <div className="flex items-center gap-1.5">
                           <Clock size={14} className="text-neutral-500" />
-                          <span className="text-xs font-black text-neutral-400">{plan.exercises.reduce((acc, ex) => acc + (ex.restTime * ex.sets.length / 60), 45).toFixed(0)}m</span>
+                          <span className="text-xs font-black text-neutral-400">{plan.exercises.reduce((acc, ex) => acc + (ex.restTime * ex.sets.length / 60), 0) > 0 ? plan.exercises.reduce((acc, ex) => acc + (ex.restTime * ex.sets.length / 60), 0).toFixed(0) : 45}m</span>
                        </div>
                     </div>
                     <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center group-hover:bg-red-600 transition-colors">
@@ -127,6 +194,19 @@ export default function WorkoutPlans() {
       </div>
 
       <AnimatePresence>
+        {detailedEditingPlan && (
+          <WorkoutPlanEditor 
+             plan={detailedEditingPlan}
+             onClose={() => setDetailedEditingPlan(null)}
+             onSave={(updated) => {
+                setPlans(prev => prev.map(p => p.id === updated.id ? updated : p));
+                setDetailedEditingPlan(updated);
+             }}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
         {isCreating && (
           <div className="fixed inset-0 z-50 flex items-end justify-center p-4 bg-black/60 backdrop-blur-sm">
             <motion.div 
@@ -136,8 +216,8 @@ export default function WorkoutPlans() {
               className="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-[32px] p-8 shadow-2xl"
             >
               <div className="flex justify-between items-center mb-8">
-                <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white">Novo Plano</h3>
-                <button onClick={() => setIsCreating(false)} className="p-2 hover:bg-neutral-800 rounded-lg text-white"><X size={24} /></button>
+                <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white">{editingPlan ? 'Editar Plano' : 'Novo Plano'}</h3>
+                <button onClick={() => { setIsCreating(false); setEditingPlan(null); setNewPlanTitle(''); }} className="p-2 hover:bg-neutral-800 rounded-lg text-white"><X size={24} /></button>
               </div>
 
               <div className="space-y-6">
@@ -152,12 +232,14 @@ export default function WorkoutPlans() {
                   />
                 </div>
 
-                <button 
-                  onClick={addPlan}
-                  className="w-full bg-red-600 py-4 rounded-2xl font-black uppercase tracking-widest flex items-center justify-center gap-2 text-white"
-                >
-                  <Save size={20} /> Salvar Plano
-                </button>
+                <div className="grid grid-cols-1 gap-4">
+                   <button 
+                     onClick={addPlan}
+                     className="w-full bg-red-600 py-4 rounded-2xl font-black uppercase tracking-widest flex items-center justify-center gap-2 text-white shadow-lg shadow-red-600/20 transition-all active:scale-95"
+                   >
+                     <Save size={20} /> {editingPlan ? 'Atualizar Plano' : 'Salvar Plano'}
+                   </button>
+                </div>
               </div>
             </motion.div>
           </div>

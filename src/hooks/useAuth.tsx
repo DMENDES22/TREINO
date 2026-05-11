@@ -21,48 +21,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // TEMPORARY: Anonymous test mode
-    const testUser = {
-      uid: 'test-user-id',
-      displayName: 'Usuário Teste',
-      email: 'teste@ironflow.com',
-      photoURL: null
-    } as User;
-
-    const fetchProfile = async () => {
-      const docRef = doc(db, 'users', testUser.uid);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        setProfile(docSnap.data() as UserProfile);
-      } else {
-        // Create initial profile for test user
-        const initialProfile: UserProfile = {
-          uid: testUser.uid,
-          displayName: testUser.displayName || 'Usuário',
-          email: testUser.email || '',
-          weight: 75,
-          height: 175,
-          age: 25,
-          gender: 'Masculino',
-          goal: 'Hipertrofia',
-          level: 'Intermediário',
-          measurementsHistory: []
-        };
-        await setDoc(docRef, initialProfile);
-        setProfile(initialProfile);
-      }
-      setUser(testUser);
-      setLoading(false);
-    };
-
-    fetchProfile();
-
-    // Actual Firebase Auth logic (commented out for test phase)
-    /*
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setUser(user);
-      if (user) {
-        const docRef = doc(db, 'users', user.uid);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setUser(firebaseUser);
+      if (firebaseUser) {
+        const docRef = doc(db, 'users', firebaseUser.uid);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           setProfile(docSnap.data() as UserProfile);
@@ -75,7 +37,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     });
     return unsubscribe;
-    */
   }, []);
 
   const login = async () => {
@@ -90,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateProfile = async (data: Partial<UserProfile>) => {
     if (!user) return;
     const docRef = doc(db, 'users', user.uid);
-    const newProfile = profile ? { ...profile, ...data } : (data as UserProfile);
+    const newProfile = profile ? { ...profile, ...data } : { ...data, uid: user.uid, email: user.email || '' } as UserProfile;
     await setDoc(docRef, newProfile, { merge: true });
     setProfile(newProfile);
   };

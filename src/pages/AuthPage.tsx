@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { LogIn, Github } from 'lucide-react';
 
 export default function AuthPage() {

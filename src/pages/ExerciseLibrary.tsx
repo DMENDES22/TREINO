@@ -1,19 +1,79 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { EXERCISES } from '../data/exercises';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Info, X, Play, Dumbbell } from 'lucide-react';
-import { Exercise, MuscleGroup } from '../types';
+import { motion, AnimatePresence } from 'motion/react';
+import { Search, Info, X, Play, Dumbbell, Check, ChevronDown, Plus } from 'lucide-react';
+import { Exercise, MuscleGroup, Workout, WorkoutExercise } from '../types';
+import { useAuth } from '../hooks/useAuth';
+import { db, handleFirestoreError, OperationType } from '../lib/firebase';
+import { collection, query, where, getDocs, updateDoc, doc } from 'firebase/firestore';
 
 export default function ExerciseLibrary() {
+  const { user } = useAuth();
   const [search, setSearch] = useState('');
   const [selectedMuscle, setSelectedMuscle] = useState<MuscleGroup | 'Todos'>('Todos');
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  const [plans, setPlans] = useState<Workout[]>([]);
+  const [showPlanPicker, setShowPlanPicker] = useState(false);
+  const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
+
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      if (!user) return;
+      try {
+        // Fetch plans
+        const qPlans = query(collection(db, 'workouts'), where('userId', '==', user.uid));
+        const snapPlans = await getDocs(qPlans);
+        setPlans(snapPlans.docs.map(d => ({ id: d.id, ...d.data() } as Workout)));
+
+        // Fetch custom exercises
+        const qCustom = query(collection(db, 'custom_exercises'), where('userId', '==', user.uid));
+        const snapCustom = await getDocs(qCustom);
+        setCustomExercises(snapCustom.docs.map(d => ({ ...d.data() } as Exercise)));
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchInitialData();
+  }, [user]);
+
+  const addToWorkout = async (planId: string) => {
+    if (!selectedExercise || !user) return;
+
+    try {
+      const planRef = doc(db, 'workouts', planId);
+      const plan = plans.find(p => p.id === planId);
+      if (!plan) return;
+
+      const newEx: WorkoutExercise = {
+        ...selectedExercise,
+        sets: [
+          { reps: 12, weight: 0, completed: false, type: 'V' },
+          { reps: 12, weight: 0, completed: false, type: 'V' },
+          { reps: 12, weight: 0, completed: false, type: 'V' }
+        ],
+        restTime: 60
+      };
+
+      await updateDoc(planRef, {
+        exercises: [...plan.exercises, newEx]
+      });
+
+      setPlans(plans.map(p => p.id === planId ? { ...p, exercises: [...p.exercises, newEx] } : p));
+      setShowPlanPicker(false);
+      setSelectedExercise(null);
+      alert('Adicionado com sucesso!');
+    } catch (e) {
+      handleFirestoreError(e, OperationType.UPDATE, 'workouts');
+    }
+  };
 
   const muscles: (MuscleGroup | 'Todos')[] = [
     'Todos', 'Peito', 'Costas', 'Ombros', 'Bíceps', 'Tríceps', 'Pernas', 'Glúteos', 'Abdômen', 'Panturrilha', 'Antebraço'
   ];
 
-  const filtered = EXERCISES.filter(ex => {
+  const allExercises = [...EXERCISES, ...customExercises];
+
+  const filtered = allExercises.filter(ex => {
     const matchesSearch = ex.name.toLowerCase().includes(search.toLowerCase());
     const matchesMuscle = selectedMuscle === 'Todos' || ex.category === selectedMuscle;
     return matchesSearch && matchesMuscle;
@@ -61,7 +121,12 @@ export default function ExerciseLibrary() {
              </div>
              <div className="flex-1">
                 <h4 className="font-extrabold text-white uppercase tracking-tight">{ex.name}</h4>
-                <p className="text-neutral-500 text-[10px] font-black uppercase tracking-widest">{ex.category} • {ex.equipment}</p>
+                <div className="flex items-center gap-2">
+                   <p className="text-neutral-500 text-[10px] font-black uppercase tracking-widest">{ex.category} • {ex.equipment}</p>
+                   {ex.id.startsWith('custom_') && (
+                      <span className="text-[8px] bg-red-600/20 text-red-500 px-1.5 py-0.5 rounded font-black uppercase">Personalizado</span>
+                   )}
+                </div>
              </div>
              <Info className="text-neutral-600" size={20} />
           </motion.div>
@@ -112,18 +177,51 @@ export default function ExerciseLibrary() {
                     </ul>
                  </section>
 
-                 <section className="space-y-3">
+                  <section className="space-y-3">
                     <h3 className="text-xs font-black uppercase tracking-widest text-red-500">Músculos Ativados</h3>
                     <div className="flex flex-wrap gap-2 text-[10px] font-bold text-neutral-500">
                        {selectedExercise.muscles.map(m => (
                          <span key={m} className="border border-neutral-800 px-3 py-1 rounded-full uppercase">{m}</span>
                        ))}
                     </div>
-                 </section>
+                  </section>
 
-                 <button className="w-full bg-white text-black font-black py-4 rounded-2xl flex items-center justify-center gap-3 active:scale-95 transition-all">
-                    ADICIONAR AO MEU TREINO
-                 </button>
+                  <div className="relative pt-4">
+                    <button 
+                      onClick={() => setShowPlanPicker(!showPlanPicker)}
+                      className="w-full bg-white text-black font-black py-4 rounded-2xl flex items-center justify-center gap-3 active:scale-95 transition-all text-xs uppercase tracking-widest"
+                    >
+                       {showPlanPicker ? <X size={18} /> : <Plus className="w-4 h-4" />} ADICIONAR AO MEU TREINO
+                    </button>
+
+                    <AnimatePresence>
+                      {showPlanPicker && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 10 }}
+                          className="absolute bottom-full left-0 right-0 mb-4 bg-black border border-neutral-800 rounded-3xl p-3 shadow-2xl max-h-48 overflow-y-auto z-50"
+                        >
+                           {plans.length === 0 ? (
+                              <p className="text-[10px] font-bold text-neutral-500 text-center py-4 uppercase">Crie um plano primeiro</p>
+                           ) : (
+                              <div className="space-y-1">
+                                 {plans.map(p => (
+                                    <button 
+                                      key={p.id}
+                                      onClick={() => addToWorkout(p.id)}
+                                      className="w-full text-left p-4 hover:bg-neutral-900 rounded-2xl flex items-center justify-between group active:bg-red-600/10 transition-all border border-transparent hover:border-neutral-800"
+                                    >
+                                       <span className="text-xs font-bold text-neutral-300 group-hover:text-white uppercase tracking-tight">{p.title}</span>
+                                       <ChevronDown size={14} className="text-neutral-500 -rotate-90 group-hover:text-red-500" />
+                                    </button>
+                                 ))}
+                              </div>
+                           )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
               </div>
             </motion.div>
           </motion.div>
