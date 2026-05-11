@@ -297,24 +297,17 @@ export default function ProfileSettings({ isInitialSetup = false }: { isInitialS
        <div className="px-6 space-y-8">
           {/* Action List */}
           <section className="space-y-4">
-             <h3 className="text-xs font-black uppercase tracking-widest text-neutral-500 px-2">Configurações</h3>
+             <h3 className="text-xs font-black uppercase tracking-widest text-neutral-500 px-2">Ações</h3>
              <div className="bg-neutral-900 border border-neutral-800 rounded-[32px] overflow-hidden">
                 <button 
                   onClick={() => setIsEditing(true)}
-                  className="w-full flex items-center justify-between p-6 hover:bg-neutral-800/50 transition-colors border-b border-neutral-800/50"
+                  className="w-full flex items-center justify-between p-6 hover:bg-neutral-800/50 transition-colors"
                 >
                    <div className="flex items-center gap-3 text-white">
                       <Scale size={20} className="text-red-500" />
                       <span className="font-black text-xs uppercase tracking-widest leading-none">Atualizar Medidas</span>
                    </div>
                    <ChevronRight size={16} className="text-neutral-600" />
-                </button>
-                <button onClick={logout} className="w-full flex items-center justify-between p-6 hover:bg-neutral-800/50 text-red-500 transition-colors">
-                   <div className="flex items-center gap-3">
-                      <LogOut size={20} />
-                      <span className="font-black text-xs uppercase tracking-widest leading-none text-white">Sair da Conta</span>
-                   </div>
-                   <ChevronRight size={16} />
                 </button>
              </div>
           </section>

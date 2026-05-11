@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Home, Dumbbell, TrendingUp, Library, User, PlusCircle, Search, Play, Menu, X, ChevronRight, History } from 'lucide-react';
+import { Home, Dumbbell, TrendingUp, Library, User, PlusCircle, Search, Play, Menu, X, ChevronRight, History, Settings as SettingsIcon } from 'lucide-react';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 
 // Pages
@@ -12,10 +12,11 @@ import ProfileSettings from './pages/ProfileSettings';
 import AuthPage from './pages/AuthPage';
 import ActiveWorkout from './pages/ActiveWorkout';
 import CustomExerciseCreator from './components/CustomExerciseCreator';
+import Settings from './pages/Settings';
 
 import { Workout } from './types';
 
-type Tab = 'home' | 'workouts' | 'exercises' | 'evolution' | 'profile';
+type Tab = 'home' | 'workouts' | 'exercises' | 'evolution' | 'profile' | 'settings';
 
 const NavButton = ({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string }) => (
   <button 
@@ -34,6 +35,7 @@ const MainApp = () => {
   const [activeTab, setActiveTab] = useState<Tab>('home');
   const [isTraining, setIsTraining] = useState<Workout | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
 
   if (loading) {
     return (
@@ -51,8 +53,8 @@ const MainApp = () => {
     );
   }
 
-  if (!user) return <AuthPage />;
-  if (!profile) return <ProfileSettings isInitialSetup={true} />;
+  if (!user && !hasStarted) return <AuthPage onEnter={() => setHasStarted(true)} />;
+  if (user && !profile) return <ProfileSettings isInitialSetup={true} />;
   if (isTraining) return <ActiveWorkout plan={isTraining} onFinish={() => setIsTraining(null)} />;
 
   const menuItems = [
@@ -61,6 +63,7 @@ const MainApp = () => {
     { id: 'exercises', label: 'Biblioteca', icon: <Library size={22} /> },
     { id: 'evolution', label: 'Evolução', icon: <TrendingUp size={22} /> },
     { id: 'profile', label: 'Perfil', icon: <User size={22} /> },
+    { id: 'settings', label: 'Ajustes', icon: <SettingsIcon size={22} /> },
   ];
 
   const handleTabChange = (id: string) => {
@@ -176,6 +179,7 @@ const MainApp = () => {
             {activeTab === 'exercises' && <ExerciseLibrary />}
             {activeTab === 'evolution' && <WorkoutHistory />}
             {activeTab === 'profile' && <ProfileSettings />}
+            {activeTab === 'settings' && <Settings />}
           </motion.div>
         </AnimatePresence>
       </main>
